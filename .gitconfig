@@ -1,0 +1,35 @@
+[includeIf "gitdir:~/"]
+    path = ~/.gitconfig.local
+	# should look like:
+	# [user]
+    	# email = name@
+		# name = FirstName LastName
+[user]
+	useConfigOnly = true
+[core]
+	excludesfile = ~/.gitignore_global
+	editor = nano
+	attributesfile = ~/.gitattributes
+[push]
+	default = simple
+[alias]
+	unstage = reset HEAD --
+	st = status
+	co = checkout
+	last = log -1 HEAD
+	br = branch
+	cane = commit --amend --no-edit
+	changes-in-commit = diff-tree --no-commit-id --name-only -r
+	grep-commits = "!sh -c \"git log --all --grep=$1\" "
+	commit-all = "!sh -c \"git add -A && git commit --edit\" "
+	diffy = "difftool --extcmd=\"colordiff -ydw\""
+	updatesubs = "!sh -c \"git submodule init && git submodule update && git submodule status\" "
+[color]
+	ui = true
+[init]
+	templatedir = ~/.git-templates
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true

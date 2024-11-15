@@ -1,0 +1,17 @@
+*~
+.DS_Store
+.idea
+*.iml
+*.zip
+*.marker
+target/
+.classpath
+.project
+.settings
+.vscode
+.env
+bin
+dredd.yml
+.octoebrc
+*.iws
+*.ipr
