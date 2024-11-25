@@ -103,8 +103,6 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-source $HOME/.zsh-helpers/source-helpers.sh
-
 POWERLEVEL10K_PATH="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k/powerlevel10k.zsh-theme"
 if [ -f "$POWERLEVEL10K_PATH" ]; then
     source "$POWERLEVEL10K_PATH"
@@ -114,3 +112,5 @@ fi
 plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 source "${ZSH:-$HOME/.oh-my-zsh}/oh-my-zsh.sh"
+
+source $HOME/.zsh-helpers/source-helpers.sh

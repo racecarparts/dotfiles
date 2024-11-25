@@ -1,3 +1,8 @@
-alias lla='ll -la'
-alias lld='lsd -l'
-alias llda='lsd -la'
+# alias ll='ls -aGop'
+# alias ls='ls -F'
+alias ls='lsd'
+
+alias l='lsd -l'
+alias la='lsd -a'
+alias ll='lsd -la'
+alias lt='lsd --tree'
