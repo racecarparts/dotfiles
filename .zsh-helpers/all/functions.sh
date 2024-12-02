@@ -82,3 +82,7 @@ function copy_file_contents() {
         echo "File not found: $1"
     fi
 }
+
+function follow_github_prs() {
+  ~/.util/follow_github_org_prs.sh
+}
