@@ -86,3 +86,7 @@ function copy_file_contents() {
 function follow_github_prs() {
   ~/.util/follow_github_org_prs.sh
 }
+
+function e1s_sso() {
+  ~/.util/e1s_sso.sh
+}
