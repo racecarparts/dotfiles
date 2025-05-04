@@ -6,6 +6,8 @@
 		# name = FirstName LastName
 [user]
 	useConfigOnly = true
+	email = 10102926+racecarparts@users.noreply.github.com
+	name = Tom Wheeler
 [core]
 	excludesfile = ~/.gitignore_global
 	editor = nano

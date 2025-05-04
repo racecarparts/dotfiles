@@ -1,0 +1,1 @@
+alias aseprite="/Applications/Aseprite.app/Contents/MacOS/aseprite"
