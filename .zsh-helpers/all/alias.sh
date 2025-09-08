@@ -6,3 +6,8 @@ alias l='lsd -l'
 alias la='lsd -a'
 alias ll='lsd -la'
 alias lt='lsd --tree'
+
+alias python='python3'
+
+alias ccm='ccm --theme classic'
+alias ccuser='jq -r ".oauthAccount.emailAddress // \"Not logged in\"" ~/.claude.json 2>/dev/null || echo "Claude not configured"'
