@@ -90,3 +90,12 @@ function follow_github_prs() {
 function e1s_sso() {
   ~/.util/e1s_sso.sh
 }
+
+gprev() {
+  echo "=== Matches and previous line(s) ==="
+  grep "$1" -R -B1 .
+
+  echo
+  echo "=== Only previous line(s) ==="
+  grep "$1" -R -B1 . | grep -v "$1"
+}
