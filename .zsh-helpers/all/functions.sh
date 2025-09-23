@@ -99,3 +99,12 @@ gprev() {
   echo "=== Only previous line(s) ==="
   grep "$1" -R -B1 . | grep -v "$1"
 }
+
+gnext() {
+  echo "=== Matches and next line(s) ==="
+  grep "$1" -R -A1 .
+
+  echo
+  echo "=== Only next line(s) ==="
+  grep "$1" -R -A1 . | grep -v "$1"
+}
