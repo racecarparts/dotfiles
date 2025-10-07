@@ -9,5 +9,5 @@ alias lt='lsd --tree'
 
 alias python='python3'
 
-alias ccm='ccm --theme classic'
+alias ccm='ccmonitor --theme dark --plan pro'
 alias ccuser='jq -r ".oauthAccount.emailAddress // \"Not logged in\"" ~/.claude.json 2>/dev/null || echo "Claude not configured"'
