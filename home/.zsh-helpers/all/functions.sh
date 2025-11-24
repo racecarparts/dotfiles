@@ -112,3 +112,7 @@ gnext() {
 function zero_stl() {
   uv run ~/.util/python/zero_stl.py "$1"
 }
+
+function install_env_tools() {
+  ~/.util/install-tools.sh
+}
