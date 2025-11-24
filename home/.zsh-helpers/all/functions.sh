@@ -110,5 +110,5 @@ gnext() {
 }
 
 function zero_stl() {
-  uv ~/.util/python/zero_stl.py "$1"
+  uv run ~/.util/python/zero_stl.py "$1"
 }
