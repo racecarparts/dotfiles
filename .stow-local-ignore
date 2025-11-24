@@ -1,2 +1,5 @@
-setup.sh
-.DS_Store
+^/setup\.sh$
+^/\.DS_Store$
+^/\.git$
+^/\.gitignore$
+^/README.*

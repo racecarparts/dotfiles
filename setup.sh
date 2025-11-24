@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# Check if a directory is provided for stowing
-DOTFILES_DIR="$1"
-if [ -z "$DOTFILES_DIR" ]; then
-    echo "Please specify a directory to stow."
-    exit 1
-fi
-
 # Function to install recommended MesloLGS NF fonts for Powerlevel10k
 install_recommended_meslo_fonts() {
     FONT_URL_BASE="https://github.com/romkatv/powerlevel10k-media/raw/master"
@@ -189,7 +182,8 @@ else
     echo "oh-my-zsh is not installed. Please install oh-my-zsh first."
 fi
 
-# Run stow on the specified directory
-stow "$DOTFILES_DIR"
+# Run stow on the home directory
+echo "Stowing dotfiles from 'home' directory..."
+stow home
 
-echo "Stow completed."
+echo "Stow completed successfully. Your dotfiles are now in place!"

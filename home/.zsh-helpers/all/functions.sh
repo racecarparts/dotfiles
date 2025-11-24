@@ -108,3 +108,7 @@ gnext() {
   echo "=== Only next line(s) ==="
   grep "$1" -R -A1 . | grep -v "$1"
 }
+
+function zero_stl() {
+  uv ~/.util/python/zero_stl.py "$1"
+}
