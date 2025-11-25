@@ -181,6 +181,7 @@ BREW_PACKAGES=(
     "jq"
     "uv"
     "lsd"
+    "switchaudio-osx"
     # "ripgrep"
     # "fzf"
     # "git"
