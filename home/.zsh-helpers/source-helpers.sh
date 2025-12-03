@@ -26,3 +26,10 @@ else
 fi
 
 source_files_in_directory "$HOME/.zsh-helpers/all"
+
+# Source organization specific helpers (in all subdirs) if any
+while IFS= read -r script; do
+    if [[ -f "$script" ]]; then
+        source "$script" || echo "Warning: Failed to source $script" >&2
+    fi
+done < <(find "$HOME/.org"/*/ -iname "*.sh" 2>/dev/null)

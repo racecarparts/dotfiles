@@ -119,3 +119,6 @@ if [ -f '/Users/tom/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/t
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/Users/tom/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/tom/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
+
+# Add ~/.local/bin to PATH
+export PATH="$HOME/.local/bin:$PATH"

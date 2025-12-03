@@ -182,9 +182,18 @@ BREW_PACKAGES=(
     "uv"
     "lsd"
     "switchaudio-osx"
-    # "ripgrep"
-    # "fzf"
-    # "git"
+    "awscli"
+    "wget"
+    "mise"
+    "docker-desktop"
+    "1password-cli"
+    "git-lfs"
+    "libpq"
+    "go"
+    "ariga/tap/atlas"
+    "dbeaver-community"
+    "mongodb-compass"
+    "mongosh"
 )
 
 # Example pip packages
@@ -207,6 +216,11 @@ GO_PACKAGES=(
 #     "https://github.com/user/repo/releases/download/v1.0.0/binary-name" \
 #     "$HOME/.local/bin/binary-name" \
 #     "binary-name"
+
+install_from_curl \
+    "https://claude.ai/install.sh" \
+    "$HOME/.local/bin/claude" \
+    "claude"
 
 # Example archive installations:
 # install_from_archive \
