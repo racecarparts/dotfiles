@@ -32,4 +32,4 @@ while IFS= read -r script; do
     if [[ -f "$script" ]]; then
         source "$script" || echo "Warning: Failed to source $script" >&2
     fi
-done < <(find "$HOME/.org"/*/ -iname "*.sh" 2>/dev/null)
+done < <(find "$HOME/.org" -mindepth 2 -iname "*.sh" 2>/dev/null || true)
