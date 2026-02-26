@@ -73,6 +73,15 @@ build_query() {
                       }
                     }
                   }
+                  reviewRequests(first: 10) {
+                    nodes {
+                      requestedReviewer {
+                        ... on User {
+                          login
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -135,6 +144,7 @@ date_in_range() {
 
 NORMAL="\e[0m"
 HIGHLIGHT="\e[0;32m"
+YELLOW="\e[0;33m"
 
 # Function to execute the GraphQL query and print results
 fetch_pull_requests() {
@@ -154,7 +164,7 @@ fetch_pull_requests() {
     local has_team="false"
     [[ -n "$team" ]] && has_team="true"
 
-    echo "$response" | jq -r --arg org "$org" --argjson has_team "$has_team" '
+    echo "$response" | jq -r --arg org "$org" --argjson has_team "$has_team" --arg viewer_login "$VIEWER_LOGIN" '
       (if $has_team then .data.organization.team else .data.organization end)
       | .repositories.edges[]
       | .node.name as $repo
@@ -175,8 +185,9 @@ fetch_pull_requests() {
         })
       | map("\(.author) (\(.states))")
       | join(", ") as $reviewers_with_state
-      | "\($org)/\($repo) |\($pr.title) |\($pr.url)|\($pr.author.login) |\($reviewers_with_state) |\($pr.createdAt) |\($pr.number) |\($pr.isDraft)"
-    ' | while IFS='|' read -r repo title url author reviewers_with_state created_at number isDraft; do
+      | (($pr.reviewRequests.nodes // []) | map(.requestedReviewer.login) | any(. == $viewer_login)) as $review_requested
+      | "\($org)/\($repo) |\($pr.title) |\($pr.url)|\($pr.author.login) |\($reviewers_with_state) |\($pr.createdAt) |\($pr.number) |\($pr.isDraft) |\($review_requested)"
+    ' | while IFS='|' read -r repo title url author reviewers_with_state created_at number isDraft review_requested; do
       if date_in_range "$created_at"; then
         if [ "$isDraft" = "true" ]; then
           title="DRAFT: $title"
@@ -191,7 +202,9 @@ fetch_pull_requests() {
         created_at_local=$(date -j -u -f "%Y-%m-%dT%H:%M:%S" "$created_at_iso" +"%s")
         created_at_local=$(date -r "$created_at_local" +"%Y-%m-%d %I:%M:%S %p")
 
-        if [[ ",$TEAM_MEMBERS," == *",$(echo $author | xargs),"* ]]; then
+        if [[ "$review_requested" == *"true"* ]]; then
+            printf "${YELLOW}%-30s %-40s %-10s %-15s %-25s %-15s${NORMAL}\n" "$repo" "$truncated_title" "$pr_url" "$author" "$created_at_local" "$reviewers_with_state"
+        elif [[ ",$TEAM_MEMBERS," == *",$(echo $author | xargs),"* ]]; then
             printf "${HIGHLIGHT}%-30s %-40s %-10s %-15s %-25s %-15s${NORMAL}\n" "$repo" "$truncated_title" "$pr_url" "$author" "$created_at_local" "$reviewers_with_state"
         else
             printf "%-30s %-40s %-10s %-15s %-25s %-15s\n" "$repo" "$truncated_title" "$pr_url" "$author" "$created_at_local" "$reviewers_with_state"
@@ -203,6 +216,13 @@ fetch_pull_requests() {
 
 # Calculate refresh interval in seconds
 REFRESH_INTERVAL=$((INTERVAL_MINUTES * 60))
+
+# Get the currently authenticated user's login from the token
+VIEWER_LOGIN=$(gh api graphql -f query='{ viewer { login } }' | jq -r '.data.viewer.login')
+if [[ -z "$VIEWER_LOGIN" || "$VIEWER_LOGIN" == "null" ]]; then
+  echo "Warning: Could not determine viewer login. Review-requested highlighting will be disabled."
+  VIEWER_LOGIN=""
+fi
 
 # Continuously fetch and print pull requests at the specified interval
 while true; do
