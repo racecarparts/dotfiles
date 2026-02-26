@@ -1,3 +1,5 @@
 .gitconfig.local
 
 .org/**/
+
+.config/github_org/follow_github_org_prs.cfg

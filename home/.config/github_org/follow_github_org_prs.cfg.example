@@ -1,0 +1,17 @@
+# GitHub Org PR Follower Configuration
+# Copy this file to config.cfg and fill in your values
+
+# Organizations and teams to monitor (format: "org-name:team-slug"), quoted and space separated
+ORGS=("org-name-1:team-name" "org2")
+
+# Maximum PR title length before truncation
+MAX_TITLE_LENGTH=40
+
+# Number of days to look back for PRs
+DATE_RANGE_DAYS=60
+
+# Comma-separated list of team members GitHub logins to highlight
+TEAM_MEMBERS="ghusername1,ghusername2"
+
+# How often to refresh in minutes
+INTERVAL_MINUTES=5

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+GITHUB_ORG_PR_CONFIG_NAME="follow_github_org_prs.cfg"
+
 # Function to install recommended MesloLGS NF fonts for Powerlevel10k
 install_recommended_meslo_fonts() {
     FONT_URL_BASE="https://github.com/romkatv/powerlevel10k-media/raw/master"
@@ -184,6 +186,21 @@ fi
 
 # Run stow on the home directory
 echo "Stowing dotfiles from 'home' directory..."
-stow home
+if stow --restow home; then
+  echo "Stow completed successfully. Your dotfiles are now in place!"
+else
+  echo "Stow encountered conflicts. Resolve them and re-run setup.sh."
+  exit 1
+fi
 
-echo "Stow completed successfully. Your dotfiles are now in place!"
+# Set up GitHub org PR config if not already present
+GITHUB_ORG_CONFIG="$HOME/.config/github_org/$GITHUB_ORG_PR_CONFIG_NAME"
+GITHUB_ORG_EXAMPLE="$HOME/.config/github_org/$GITHUB_ORG_PR_CONFIG_NAME.example"
+if [[ -f "$GITHUB_ORG_CONFIG" ]]; then
+  echo "GitHub org PR config already exists, skipping."
+elif [[ -f "$GITHUB_ORG_EXAMPLE" ]]; then
+  cp "$GITHUB_ORG_EXAMPLE" "$GITHUB_ORG_CONFIG"
+  echo "Created $GITHUB_ORG_CONFIG from example. Please edit it with your values."
+else
+  echo "Warning: $GITHUB_ORG_EXAMPLE not found. Skipping GitHub org PR config setup."
+fi
