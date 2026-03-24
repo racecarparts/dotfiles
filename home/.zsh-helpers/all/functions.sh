@@ -83,6 +83,105 @@ function copy_file_contents() {
     fi
 }
 
+function gcommit() {
+  local OPTIND opt
+  local message="" body="" co_author="Claude Sonnet 4.6 <noreply@anthropic.com>"
+  local no_co_author=0 squash=0 base_branch=""
+
+  while getopts ":m:b:c:B:snh" opt; do
+    case $opt in
+      m) message="$OPTARG" ;;
+      b) body="$OPTARG" ;;
+      c) co_author="$OPTARG" ;;
+      B) base_branch="$OPTARG" ;;
+      s) squash=1 ;;
+      n) no_co_author=1 ;;
+      h)
+        echo "Usage: gcommit -m <message> [-b <body>] [-c <co-author>] [-n] [-s] [-B <base-branch>]"
+        echo "  -m  commit message (required)"
+        echo "  -b  commit body"
+        echo "  -c  co-author trailer (default: Claude Sonnet 4.6 <noreply@anthropic.com>)"
+        echo "  -n  omit co-author trailer"
+        echo "  -s  squash WIP commits since base branch into one"
+        echo "  -B  base branch (default: auto-detected from origin/HEAD, fallback: main)"
+        return 0
+        ;;
+      :) echo "Option -$OPTARG requires an argument." >&2; return 1 ;;
+      \?) echo "Unknown option: -$OPTARG" >&2; return 1 ;;
+    esac
+  done
+
+  if [[ -z "$message" ]]; then
+    local reply
+    read -r "reply?Squash WIP commits? [y/N] "
+    [[ "$reply" =~ ^[Yy]$ ]] && squash=1
+
+    read -r "message?Commit message: "
+    [[ -z "$message" ]] && { echo "Commit message required." >&2; return 1; }
+
+    echo "Commit body (optional, empty line to finish):"
+    local line
+    while IFS= read -r "line?> "; do
+      [[ -z "$line" ]] && break
+      body="${body:+$body$'\n'}$line"
+    done
+
+    read -r "reply?Add co-author trailer? [Y/n] "
+    if [[ "$reply" =~ ^[Nn]$ ]]; then
+      no_co_author=1
+    else
+      read -r "reply?Co-author [${co_author}]: "
+      [[ -n "$reply" ]] && co_author="$reply"
+    fi
+  fi
+
+  if [[ -z "$base_branch" ]]; then
+    base_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+    base_branch="${base_branch:-main}"
+  fi
+
+  local branch
+  branch=$(git rev-parse --abbrev-ref HEAD) || return 1
+
+  local trailer=""
+  [[ $no_co_author -eq 0 ]] && trailer="Co-authored-by: $co_author"
+
+  local full_message
+  if [[ -n "$body" && -n "$trailer" ]]; then
+    full_message="$(printf '%s\n\n%s\n\n%s' "$message" "$body" "$trailer")"
+  elif [[ -n "$body" ]]; then
+    full_message="$(printf '%s\n\n%s' "$message" "$body")"
+  elif [[ -n "$trailer" ]]; then
+    full_message="$(printf '%s\n\n%s' "$message" "$trailer")"
+  else
+    full_message="$message"
+  fi
+
+  if [[ $squash -eq 1 ]]; then
+    echo "Squashing commits since origin/$base_branch..."
+    GIT_SEQUENCE_EDITOR="perl -i -pe 's/^pick/fixup/ if \$. > 1'" \
+      git rebase -i "origin/$base_branch" || return 1
+    git commit --amend -m "$full_message" || return 1
+  else
+    git commit -m "$full_message" || return 1
+  fi
+
+  echo "Fetching origin..."
+  git fetch origin || return 1
+
+  echo "Rebasing onto origin/$base_branch..."
+  if ! git rebase "origin/$base_branch"; then
+    echo ""
+    echo "Rebase conflict — resolve conflicts, then run:"
+    echo "  git rebase --continue"
+    echo "  git push origin $branch"
+    return 1
+  fi
+
+  echo "Pushing to origin/$branch..."
+  git push origin "$branch"
+}
+
 function follow_github_prs() {
   ~/.util/follow_github_org_prs.sh
 }
@@ -115,4 +214,38 @@ function zero_stl() {
 
 function install_env_tools() {
   ~/.util/install-tools.sh
+}
+
+function ollama_add() {
+  local model="$1"
+  local opencode_config="$HOME/.config/opencode/opencode.json"
+
+  if [[ -z "$model" ]]; then
+    echo "Usage: ollama_add <model>" >&2
+    return 1
+  fi
+
+  echo "Pulling $model from Ollama..."
+  if ! ollama pull "$model"; then
+    echo "Failed to pull $model" >&2
+    return 1
+  fi
+
+  if [[ ! -f "$opencode_config" ]]; then
+    echo "opencode config not found at $opencode_config" >&2
+    return 1
+  fi
+
+  local updated
+  updated=$(jq --arg model "$model" \
+    '.provider.ollama.models[$model] = {"name": $model}' \
+    "$opencode_config")
+
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to update opencode config" >&2
+    return 1
+  fi
+
+  echo "$updated" > "$opencode_config"
+  echo "Added $model to opencode config"
 }

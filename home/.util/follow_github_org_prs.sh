@@ -50,9 +50,19 @@ graphql_query() {
 build_query() {
   local org=$1
   local team=$2
+  local cursor="${3:-}"
+
+  local repos_args="first: 50"
+  if [[ -n "$cursor" && "$cursor" != "null" ]]; then
+    repos_args="first: 50, after: \"$cursor\""
+  fi
 
   local repos_block
-  repos_block='repositories(first: 50) {
+  repos_block="repositories($repos_args) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         edges {
           node {
             name
@@ -87,7 +97,7 @@ build_query() {
             }
           }
         }
-      }'
+      }"
 
   if [[ -n "$team" ]]; then
     cat <<EOF
@@ -156,60 +166,73 @@ fetch_pull_requests() {
   for org_team in "${ORGS[@]}"; do
     local org="${org_team%%:*}"
     local team="${org_team##*:}"
-    local query
-    query=$(build_query "$org" "$team")
-    local response
-    response=$(graphql_query "$query")
-
     local has_team="false"
     [[ -n "$team" ]] && has_team="true"
 
-    echo "$response" | jq -r --arg org "$org" --argjson has_team "$has_team" --arg viewer_login "$VIEWER_LOGIN" '
-      (if $has_team then .data.organization.team else .data.organization end)
-      | .repositories.edges[]
-      | .node.name as $repo
-      | .node.pullRequests.edges[]
-      | .node as $pr
-      | $pr.reviews.edges
-      | group_by(.node.author.login)
-      | map({
-          author: .[0].node.author.login,
-          states: (map(.node.state) | unique | map(
-            . | if . == "APPROVED" then "✅"
-              elif . == "COMMENTED" then "💬"
-              elif . == "REQUESTED_CHANGES" then "🔄"
-              elif . == "PENDING" then "⏳"
-              elif . == "DISMISSED" then "🚫"
-              else "❔" end
-          ) | join(" "))
-        })
-      | map("\(.author) (\(.states))")
-      | join(", ") as $reviewers_with_state
-      | (($pr.reviewRequests.nodes // []) | map(.requestedReviewer.login) | any(. == $viewer_login)) as $review_requested
-      | "\($org)/\($repo) |\($pr.title) |\($pr.url)|\($pr.author.login) |\($reviewers_with_state) |\($pr.createdAt) |\($pr.number) |\($pr.isDraft) |\($review_requested)"
-    ' | while IFS='|' read -r repo title url author reviewers_with_state created_at number isDraft review_requested; do
-      if date_in_range "$created_at"; then
-        if [ "$isDraft" = "true" ]; then
-          title="DRAFT: $title"
-        fi
-        truncated_title=$(truncate_title "$title")
-        # Create a hyperlink for terminals that support it
-        number=$(printf %-10s $number)
-        pr_url=$(printf "\e]8;;%s\e\\\\%s\e]8;;\e\\" "$url" "$number")
+    local cursor=""
+    local has_next_page="true"
 
-        created_at_iso=$(echo "$created_at" | sed 's/[[:space:]]*$//;s/Z$//')
-        # Convert to UTC first, then adjust to local time
-        created_at_local=$(date -j -u -f "%Y-%m-%dT%H:%M:%S" "$created_at_iso" +"%s")
-        created_at_local=$(date -r "$created_at_local" +"%Y-%m-%d %I:%M:%S %p")
+    while [[ "$has_next_page" == "true" ]]; do
+      local query
+      query=$(build_query "$org" "$team" "$cursor")
+      local response
+      response=$(graphql_query "$query")
 
-        if [[ "$review_requested" == *"true"* ]]; then
-            printf "${YELLOW}%-30s %-40s %-10s %-15s %-25s %-15s${NORMAL}\n" "$repo" "$truncated_title" "$pr_url" "$author" "$created_at_local" "$reviewers_with_state"
-        elif [[ ",$TEAM_MEMBERS," == *",$(echo $author | xargs),"* ]]; then
-            printf "${HIGHLIGHT}%-30s %-40s %-10s %-15s %-25s %-15s${NORMAL}\n" "$repo" "$truncated_title" "$pr_url" "$author" "$created_at_local" "$reviewers_with_state"
-        else
-            printf "%-30s %-40s %-10s %-15s %-25s %-15s\n" "$repo" "$truncated_title" "$pr_url" "$author" "$created_at_local" "$reviewers_with_state"
-        fi
+      if [[ "$has_team" == "true" ]]; then
+        has_next_page=$(echo "$response" | jq -r '.data.organization.team.repositories.pageInfo.hasNextPage')
+        cursor=$(echo "$response" | jq -r '.data.organization.team.repositories.pageInfo.endCursor')
+      else
+        has_next_page=$(echo "$response" | jq -r '.data.organization.repositories.pageInfo.hasNextPage')
+        cursor=$(echo "$response" | jq -r '.data.organization.repositories.pageInfo.endCursor')
       fi
+
+      echo "$response" | jq -r --arg org "$org" --argjson has_team "$has_team" --arg viewer_login "$VIEWER_LOGIN" '
+        (if $has_team then .data.organization.team else .data.organization end)
+        | .repositories.edges[]
+        | .node.name as $repo
+        | .node.pullRequests.edges[]
+        | .node as $pr
+        | $pr.reviews.edges
+        | group_by(.node.author.login)
+        | map({
+            author: .[0].node.author.login,
+            states: (map(.node.state) | unique | map(
+              . | if . == "APPROVED" then "✅"
+                elif . == "COMMENTED" then "💬"
+                elif . == "REQUESTED_CHANGES" then "🔄"
+                elif . == "PENDING" then "⏳"
+                elif . == "DISMISSED" then "🚫"
+                else "❔" end
+            ) | join(" "))
+          })
+        | map("\(.author) (\(.states))")
+        | join(", ") as $reviewers_with_state
+        | (($pr.reviewRequests.nodes // []) | map(.requestedReviewer.login) | any(. == $viewer_login)) as $review_requested
+        | "\($org)/\($repo) |\($pr.title) |\($pr.url)|\($pr.author.login) |\($reviewers_with_state) |\($pr.createdAt) |\($pr.number) |\($pr.isDraft) |\($review_requested)"
+      ' | while IFS='|' read -r repo title url author reviewers_with_state created_at number isDraft review_requested; do
+        if date_in_range "$created_at"; then
+          if [ "$isDraft" = "true" ]; then
+            title="DRAFT: $title"
+          fi
+          truncated_title=$(truncate_title "$title")
+          # Create a hyperlink for terminals that support it
+          number=$(printf %-10s $number)
+          pr_url=$(printf "\e]8;;%s\e\\\\%s\e]8;;\e\\" "$url" "$number")
+
+          created_at_iso=$(echo "$created_at" | sed 's/[[:space:]]*$//;s/Z$//')
+          # Convert to UTC first, then adjust to local time
+          created_at_local=$(date -j -u -f "%Y-%m-%dT%H:%M:%S" "$created_at_iso" +"%s")
+          created_at_local=$(date -r "$created_at_local" +"%Y-%m-%d %I:%M:%S %p")
+
+          if [[ "$review_requested" == *"true"* ]]; then
+              printf "${YELLOW}%-30s %-40s %-10s %-15s %-25s %-15s${NORMAL}\n" "$repo" "$truncated_title" "$pr_url" "$author" "$created_at_local" "$reviewers_with_state"
+          elif [[ ",$TEAM_MEMBERS," == *",$(echo $author | xargs),"* ]]; then
+              printf "${HIGHLIGHT}%-30s %-40s %-10s %-15s %-25s %-15s${NORMAL}\n" "$repo" "$truncated_title" "$pr_url" "$author" "$created_at_local" "$reviewers_with_state"
+          else
+              printf "%-30s %-40s %-10s %-15s %-25s %-15s\n" "$repo" "$truncated_title" "$pr_url" "$author" "$created_at_local" "$reviewers_with_state"
+          fi
+        fi
+      done
     done
   done
 }
