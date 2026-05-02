@@ -122,3 +122,5 @@ if [ -f '/Users/tom/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/U
 
 # Add ~/.local/bin to PATH
 export PATH="$HOME/.local/bin:$PATH"
+
+[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"

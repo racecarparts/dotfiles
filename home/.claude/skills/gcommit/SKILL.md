@@ -100,10 +100,11 @@ or install them first.)
 zsh -i -c 'gcommit -m "TICKET-123 : Your title here"'
 ```
 
-Add `-s` when squashing WIP commits, `-b` for a body:
+Add `-s` when squashing WIP commits, `-b` for a body. Use `$'...'` ANSI-C
+quoting so zsh interprets `\n` as real newlines:
 
 ```bash
-zsh -i -c 'gcommit -s -m "TICKET-123 : Your title here" -b "- Bullet one\n- Bullet two"'
+zsh -i -c $'gcommit -s -m "TICKET-123 : Your title here" -b "- Bullet one\n- Bullet two"'
 ```
 
 **When to use `-s`:** Any time WIP/fixup/temp commits were detected in Step 1.
