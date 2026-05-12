@@ -216,36 +216,4 @@ function install_env_tools() {
   ~/.util/install-tools.sh
 }
 
-function ollama_add() {
-  local model="$1"
-  local opencode_config="$HOME/.config/opencode/opencode.json"
-
-  if [[ -z "$model" ]]; then
-    echo "Usage: ollama_add <model>" >&2
-    return 1
-  fi
-
-  echo "Pulling $model from Ollama..."
-  if ! ollama pull "$model"; then
-    echo "Failed to pull $model" >&2
-    return 1
-  fi
-
-  if [[ ! -f "$opencode_config" ]]; then
-    echo "opencode config not found at $opencode_config" >&2
-    return 1
-  fi
-
-  local updated
-  updated=$(jq --arg model "$model" \
-    '.provider.ollama.models[$model] = {"name": $model}' \
-    "$opencode_config")
-
-  if [[ $? -ne 0 ]]; then
-    echo "Failed to update opencode config" >&2
-    return 1
-  fi
-
-  echo "$updated" > "$opencode_config"
-  echo "Added $model to opencode config"
-}
+source ~/.util/mlx.sh
